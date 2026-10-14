@@ -1,0 +1,30 @@
+name: with1-facts
+on:
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: Ticket number
+        required: true
+      labels:
+        description: Labels to add in one call, separated by commas
+        required: true
+permissions:
+  issues: write
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add the labels in one call
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          ISSUE: ${{ inputs.issue }}
+          LABELS: ${{ inputs.labels }}
+        run: |
+          IFS=',' read -ra names <<< "$LABELS"
+          args=()
+          for name in "${names[@]}"; do
+            gh label create "$name" >/dev/null 2>&1 || true
+            args+=(-f "labels[]=$name")
+          done
+          gh api --method POST "repos/$GH_REPO/issues/$ISSUE/labels" "${args[@]}" --silent
